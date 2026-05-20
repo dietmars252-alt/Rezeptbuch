@@ -10,7 +10,7 @@ import de.ds.rezeptbuch.data.model.Ingredient
 import de.ds.rezeptbuch.data.model.Recipe
 import de.ds.rezeptbuch.data.local.Converters
 
-@Database(entities = [Recipe::class, Ingredient::class, Category::class], version = 1, exportSchema = false)
+@Database(entities = [Recipe::class, Ingredient::class, Category::class], version = 2, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun recipeDao(): RecipeDao
