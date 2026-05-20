@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Recipe Book Spine -->
+    <path
+        android:fillColor="#E65100"
+        android:pathData="M32,28 L40,28 L40,80 L32,80 Q29,80 29,77 L29,31 Q29,28 32,28 Z" />
+    <!-- Recipe Book Cover -->
+    <path
+        android:fillColor="#FF9800"
+        android:pathData="M40,28 L74,28 Q78,28 78,32 L78,76 Q78,80 74,80 L40,80 Z" />
+    <!-- Bookmark -->
+    <path
+        android:fillColor="#FFEB3B"
+        android:pathData="M60,28 L68,28 L68,48 L64,43 L60,48 Z" />
+    <!-- Chef's Hat icon on cover -->
+    <!-- Hat Band -->
+    <path
+        android:fillColor="#FFF3E0"
+        android:pathData="M48,68 L70,68 L70,72 L48,72 Z" />
+    <!-- Hat Puffs -->
+    <path
+        android:fillColor="#FFF3E0"
+        android:pathData="M48,68 Q48,55 53,55 Q59,55 59,62 Q59,55 65,55 Q70,55 70,68 Z" />
+</vector>
