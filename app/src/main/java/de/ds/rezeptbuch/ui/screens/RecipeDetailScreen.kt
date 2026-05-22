@@ -8,9 +8,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
-import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.Remove
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.twotone.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,7 +26,7 @@ fun RecipeDetailScreen(
     recipeWithIngredients: RecipeWithIngredients?,
     currentPortions: Int,
     onUpdatePortions: (Int) -> Unit,
-    onToggleFavorite: (Long, Boolean) -> Unit,
+    onUpdateRating: (Long, Int) -> Unit, // Auf Sterne-Rating umgestellt
     onBackClick: () -> Unit,
     onEditClick: (RecipeWithIngredients) -> Unit,
     onDeleteClick: (Long) -> Unit,
@@ -94,13 +94,6 @@ fun RecipeDetailScreen(
                 IconButton(onClick = { showDeleteDialog = true }) {
                     Icon(Icons.Rounded.Delete, contentDescription = "Löschen")
                 }
-                IconButton(onClick = { onToggleFavorite(recipe.id, !recipe.istFavorit) }) {
-                    Icon(
-                        imageVector = if (recipe.istFavorit) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
-                        contentDescription = "Favorit",
-                        tint = if (recipe.istFavorit) MaterialTheme.colorScheme.primary else LocalContentColor.current
-                    )
-                }
             }
         )
 
@@ -110,28 +103,51 @@ fun RecipeDetailScreen(
             item {
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Hier werden die mehreren Kategorien als Chips dargestellt
-                // Context-Check: Falls dein Datenmodell noch eine kommagetrennte Liste ist,
-                // kannst du es hier mit .split(",") trennen (siehe Hinweis unten).
-                val kategorien = remember(recipe.kategorien) {
-                    // Beispiel-Logik: Falls du dein Datenmodell schon auf List<String> umgestellt hast
-                    recipe.kategorien
-                }
-
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                    modifier = Modifier.fillMaxWidth()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    kategorien.forEach { kategorie ->
-                        AssistChip(
-                            onClick = { /* Optional: Nach dieser Kategorie filtern */ },
-                            label = { Text(kategorie) },
-                            colors = AssistChipDefaults.assistChipColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    // Kategorien-Chips links
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        recipe.kategorien.forEach { kategorie ->
+                            AssistChip(
+                                onClick = { },
+                                label = { Text(kategorie) },
+                                colors = AssistChipDefaults.assistChipColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             )
-                        )
+                        }
+                    }
+
+                    // Die interaktive 5-Sterne-Leiste rechts daneben
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(1.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        for (i in 1..5) {
+                            val isStarred = i <= recipe.bewertung
+                            IconButton(
+                                onClick = {
+                                    val newRating = if (recipe.bewertung == i) 0 else i
+                                    onUpdateRating(recipe.id, newRating)
+                                },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isStarred) Icons.Rounded.Star else Icons.TwoTone.Star,
+                                    contentDescription = "$i Sterne",
+                                    tint = if (isStarred) androidx.compose.ui.graphics.Color(0xFFFFB300) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
                     }
                 }
 

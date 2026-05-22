@@ -10,6 +10,6 @@ data class Recipe(
     val kategorien: List<String>, // Hier auf List<String> geändert
     val portionen: Int,
     val anweisungen: List<String>,
-    val istFavorit: Boolean = false,
+    val bewertung: Int = 0,
     val bildUrl: String? = null
 )

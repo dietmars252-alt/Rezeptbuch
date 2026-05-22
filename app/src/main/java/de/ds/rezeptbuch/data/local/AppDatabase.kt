@@ -8,9 +8,12 @@ import androidx.room.TypeConverters
 import de.ds.rezeptbuch.data.model.Category
 import de.ds.rezeptbuch.data.model.Ingredient
 import de.ds.rezeptbuch.data.model.Recipe
-import de.ds.rezeptbuch.data.local.Converters
 
-@Database(entities = [Recipe::class, Ingredient::class, Category::class], version = 2, exportSchema = false)
+@Database(
+    entities = [Recipe::class, Ingredient::class, Category::class],
+    version = 3,
+    exportSchema = false
+)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun recipeDao(): RecipeDao
@@ -26,8 +29,8 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "rezept_database"
                 )
-                .fallbackToDestructiveMigration()
-                .build()
+                    .fallbackToDestructiveMigration(dropAllTables = true)
+                    .build()
                 INSTANCE = instance
                 instance
             }
