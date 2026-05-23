@@ -89,8 +89,6 @@ fun RecipeEntryScreen(
         }
     )
 
-    //var expanded by remember { mutableStateOf(false) }
-
     Column(modifier = modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text(if (editingId == null) "Neues Rezept" else "Rezept bearbeiten") },

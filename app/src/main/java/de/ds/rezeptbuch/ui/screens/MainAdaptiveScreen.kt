@@ -9,6 +9,7 @@ import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaf
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key // WICHTIGER IMPORT!
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -93,32 +94,36 @@ fun MainAdaptiveScreen(
                             selectedRecipe.recipe.portionen
                         ).collectAsState()
 
-                        RecipeDetailScreen(
-                            recipeWithIngredients = selectedRecipe,
-                            currentPortions = currentPortions,
-                            onUpdatePortions = {
-                                viewModel.updatePortions(
-                                    selectedRecipe.recipe.id,
-                                    it
-                                )
-                            },
-                            onBackClick = {
-                                scope.launch {
-                                    navigator.navigateBack()
-                                }
-                            },
-                            onEditClick = {
-                                viewModel.startEditing(it)
-                                showEntryScreen = true
-                            },
-                            onDeleteClick = { id ->
-                                scope.launch {
-                                    viewModel.deleteRecipe(id)
-                                    navigator.navigateBack()
-                                }
-                            },
-                            modifier = Modifier.fillMaxSize()
-                        )
+                        // key() zerstört den alten Zustand vollständig und erzwingt
+                        // bei jedem Rezeptwechsel ein frisches rememberPagerState(initialPage = 0)
+                        key(selectedRecipe.recipe.id) {
+                            RecipeDetailScreen(
+                                recipeWithIngredients = selectedRecipe,
+                                currentPortions = currentPortions,
+                                onUpdatePortions = {
+                                    viewModel.updatePortions(
+                                        selectedRecipe.recipe.id,
+                                        it
+                                    )
+                                },
+                                onBackClick = {
+                                    scope.launch {
+                                        navigator.navigateBack()
+                                    }
+                                },
+                                onEditClick = {
+                                    viewModel.startEditing(it)
+                                    showEntryScreen = true
+                                },
+                                onDeleteClick = { id ->
+                                    scope.launch {
+                                        viewModel.deleteRecipe(id)
+                                        navigator.navigateBack()
+                                    }
+                                },
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
                     } else {
                         RecipeDetailScreen(
                             recipeWithIngredients = null,

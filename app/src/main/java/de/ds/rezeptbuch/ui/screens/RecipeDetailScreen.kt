@@ -22,12 +22,12 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Star
-import androidx.compose.material.icons.twotone.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ButtonDefaults
@@ -80,8 +80,10 @@ fun RecipeDetailScreen(
     val decimalFormat = DecimalFormat("#.##")
     val scope = rememberCoroutineScope()
 
-    // Pager State für 3 Seiten
-    val pagerState = rememberPagerState(pageCount = { 3 })
+    // Durch das übergeordnete key() startet dieser PagerState garantiert bei 0
+    val pagerState = rememberPagerState(
+        initialPage = 0
+    ) { 3 }
 
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -144,7 +146,9 @@ fun RecipeDetailScreen(
             tabs.forEachIndexed { index, title ->
                 Tab(
                     selected = pagerState.currentPage == index,
-                    onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                    onClick = {
+                        scope.launch { pagerState.animateScrollToPage(index) }
+                    },
                     text = { Text(title) }
                 )
             }
@@ -153,10 +157,13 @@ fun RecipeDetailScreen(
         // Der HorizontalPager für das Swipen
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier.weight(1f).fillMaxWidth(),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
             verticalAlignment = Alignment.Top
         ) { pageIndex ->
-            val safeBottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp
+            val safeBottomPadding =
+                WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp
 
             when (pageIndex) {
                 0 -> { // SEITE 1: ALLGEMEINE INFOS
@@ -165,12 +172,11 @@ fun RecipeDetailScreen(
                         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = safeBottomPadding),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // NEU: Das Rezeptbild ganz oben auf der Infoseite platziert
                         item {
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(200.dp), // Höhe des Bildes im Detail-Screen
+                                    .height(200.dp),
                                 shape = MaterialTheme.shapes.large
                             ) {
                                 RecipeImage(
@@ -181,7 +187,6 @@ fun RecipeDetailScreen(
                             }
                         }
                         item {
-                            // Kategorien & Bewertung
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -199,7 +204,7 @@ fun RecipeDetailScreen(
                                 Row {
                                     for (i in 1..5) {
                                         Icon(
-                                            imageVector = if (i <= recipe.bewertung) Icons.Rounded.Star else Icons.TwoTone.Star,
+                                            imageVector = if (i <= recipe.bewertung) Icons.Rounded.Star else Icons.Filled.Star,
                                             contentDescription = null,
                                             tint = if (i <= recipe.bewertung) androidx.compose.ui.graphics.Color(0xFFFFB300) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
                                             modifier = Modifier.size(20.dp)
@@ -210,7 +215,6 @@ fun RecipeDetailScreen(
                         }
 
                         item {
-                            // Zeiten & Quelle
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
@@ -232,13 +236,12 @@ fun RecipeDetailScreen(
                     }
                 }
 
-                1 -> { // SEITE 2: ZUTATEN & PORTIONSRECHNER
+                1 -> { // SEITE 2: ZUTATEN
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = safeBottomPadding)
                     ) {
                         item {
-                            // Portionsrechner (Muss hier sein, damit man beim Rechnen die Zutaten sieht!)
                             Card(
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)),
                                 modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)

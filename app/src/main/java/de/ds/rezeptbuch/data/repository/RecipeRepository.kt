@@ -37,12 +37,6 @@ class RecipeRepository(private val recipeDao: RecipeDao) {
         recipeDao.insertIngredients(ingredientsWithId)
     }
 
-    // NEU: Ersetzt updateFavoriteStatus
-    suspend fun updateRecipeRating(recipeId: Long, stars: Int) {
-        // Sicherstellen, dass die Sterne im Bereich von 0 bis 5 liegen
-        val sanitizedStars = stars.coerceIn(0, 5)
-        recipeDao.updateRecipeRating(recipeId, sanitizedStars)
-    }
 
     suspend fun deleteRecipe(recipeId: Long) {
         recipeDao.deleteRecipe(recipeId)
