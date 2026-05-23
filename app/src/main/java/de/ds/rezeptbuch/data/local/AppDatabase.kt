@@ -11,7 +11,7 @@ import de.ds.rezeptbuch.data.model.Recipe
 
 @Database(
     entities = [Recipe::class, Ingredient::class, Category::class],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

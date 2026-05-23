@@ -1,24 +1,47 @@
 package de.ds.rezeptbuch.ui.screens
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Clear
-import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material.icons.rounded.FavoriteBorder
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.twotone.Star
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import de.ds.rezeptbuch.data.model.Category
@@ -34,10 +57,10 @@ fun RecipeListScreen(
     selectedCategories: Set<String>,
     onCategoryToggle: (String) -> Unit,
     onCategoriesClear: () -> Unit,
-    showOnlyFavorites: Boolean,
-    onToggleShowOnlyFavorites: () -> Unit,
+    showOnlyTopRated: Boolean,
+    onToggleShowOnlyTopRated: () -> Unit,
     onRecipeClick: (RecipeWithIngredients) -> Unit,
-    onToggleFavorite: (Long, Boolean) -> Unit,
+    // ENTFERNT: onUpdateRating wird hier nicht mehr benötigt
     onAddRecipeClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -67,11 +90,11 @@ fun RecipeListScreen(
                                         )
                                     }
                                 }
-                                IconButton(onClick = onToggleShowOnlyFavorites) {
+                                IconButton(onClick = onToggleShowOnlyTopRated) {
                                     Icon(
-                                        imageVector = if (showOnlyFavorites) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
-                                        contentDescription = "Nur Favoriten",
-                                        tint = if (showOnlyFavorites) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                        imageVector = if (showOnlyTopRated) Icons.Rounded.Star else Icons.TwoTone.Star,
+                                        contentDescription = "Nur Top-Rezepte",
+                                        tint = if (showOnlyTopRated) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
@@ -96,22 +119,21 @@ fun RecipeListScreen(
             }
 
             LazyColumn(
-                modifier = Modifier.weight(1f).fillMaxWidth()
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
             ) {
                 items(recipes) { recipeWithIngredients ->
                     RecipeItem(
                         recipeWithIngredients = recipeWithIngredients,
-                        onClick = { onRecipeClick(recipeWithIngredients) },
-                        onToggleFavorite = { isFav -> 
-                            onToggleFavorite(recipeWithIngredients.recipe.id, isFav) 
-                        }
+                        onClick = { onRecipeClick(recipeWithIngredients) }
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 }
             }
         }
 
-        LargeFloatingActionButton(
+        FloatingActionButton(
             onClick = onAddRecipeClick,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -125,6 +147,7 @@ fun RecipeListScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryFilters(
     categories: List<Category>,
@@ -132,71 +155,47 @@ fun CategoryFilters(
     onCategoryToggle: (String) -> Unit,
     onCategoriesClear: () -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Box(
+    LazyRow(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(vertical = 4.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        OutlinedCard(
-            onClick = { expanded = !expanded },
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.outlinedCardColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
-            )
-        ) {
-            Row(
-                modifier = Modifier
-                    .padding(12.dp)
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = if (selectedCategories.isEmpty()) {
-                        "Alle Kategorien"
-                    } else {
-                        "Kategorien (${selectedCategories.size})"
-                    },
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Icon(
-                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                    contentDescription = null
+        if (selectedCategories.isNotEmpty()) {
+            item {
+                InputChip(
+                    selected = false,
+                    onClick = onCategoriesClear,
+                    label = { Text("Filter löschen") },
+                    trailingIcon = {
+                        Icon(
+                            imageVector = Icons.Rounded.Clear,
+                            contentDescription = "Alle Filter löschen",
+                            modifier = Modifier.size(FilterChipDefaults.IconSize)
+                        )
+                    }
                 )
             }
         }
 
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.fillMaxWidth(0.9f)
-        ) {
-            DropdownMenuItem(
-                text = { Text("Alle auswählen / zurücksetzen", fontWeight = FontWeight.Bold) },
-                onClick = {
-                    onCategoriesClear()
-                    expanded = false
-                }
+        items(categories) { category ->
+            val isSelected = selectedCategories.contains(category.name)
+            FilterChip(
+                selected = isSelected,
+                onClick = { onCategoryToggle(category.name) },
+                label = { Text(category.name) },
+                leadingIcon = if (isSelected) {
+                    {
+                        Icon(
+                            imageVector = Icons.Rounded.Check,
+                            contentDescription = "Ausgewählt",
+                            modifier = Modifier.size(FilterChipDefaults.IconSize)
+                        )
+                    }
+                } else null
             )
-            HorizontalDivider()
-            categories.forEach { category ->
-                val isSelected = selectedCategories.contains(category.name)
-                DropdownMenuItem(
-                    text = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(
-                                checked = isSelected,
-                                onCheckedChange = null // Handled by MenuItem click
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(category.name)
-                        }
-                    },
-                    onClick = { onCategoryToggle(category.name) }
-                )
-            }
         }
     }
 }
@@ -204,12 +203,9 @@ fun CategoryFilters(
 @Composable
 fun RecipeItem(
     recipeWithIngredients: RecipeWithIngredients,
-    onClick: () -> Unit,
-    onToggleFavorite: (Boolean) -> Unit
+    onClick: () -> Unit
 ) {
     val recipe = recipeWithIngredients.recipe
-    // Radical simplification: Replaced ListItem with a simple Row and Column
-    // to avoid persistent measurement crashes in ListDetailPaneScaffold.
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -221,8 +217,21 @@ fun RecipeItem(
                 .padding(16.dp)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.spacedBy(16.dp) // Abstand zwischen Bild und Text
         ) {
+            // NEU: Kleines quadratisches Vorschaubild auf der linken Seite
+            androidx.compose.material3.Card(
+                modifier = Modifier.size(56.dp), // Angenehme Thumbnail-Größe
+                shape = MaterialTheme.shapes.medium
+            ) {
+                RecipeImage(
+                    bildPfad = recipe.bildpfad,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            // Der Text-Block wandert nach rechts daneben
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = recipe.titel,
@@ -232,17 +241,28 @@ fun RecipeItem(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "${recipe.kategorien} • ${recipe.portionen} Portionen",
+                    text = "${recipe.kategorien.joinToString(", ")} • ${recipe.portionen} Portionen",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            IconButton(onClick = { onToggleFavorite(!recipe.istFavorit) }) {
-                Icon(
-                    imageVector = if (recipe.istFavorit) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
-                    contentDescription = "Favorit",
-                    tint = if (recipe.istFavorit) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                )
+
+            // NEU: Reine Anzeige-Sterne ohne umschließenden IconButton
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                for (i in 1..5) {
+                    val isStarred = i <= recipe.bewertung
+                    Icon(
+                        imageVector = if (isStarred) Icons.Rounded.Star else Icons.TwoTone.Star,
+                        contentDescription = null, // Dekoratives Element
+                        tint = if (isStarred) androidx.compose.ui.graphics.Color(0xFFFFB300) else MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                            alpha = 0.3f
+                        ),
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             }
         }
     }

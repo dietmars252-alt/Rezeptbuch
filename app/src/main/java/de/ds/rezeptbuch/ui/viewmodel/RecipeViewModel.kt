@@ -39,26 +39,30 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
         _portionMap.value = currentMap
     }
 
-    private val _showOnlyFavorites = MutableStateFlow(false)
-    val showOnlyFavorites: StateFlow<Boolean> = _showOnlyFavorites
+    private val _showOnlyTopRated = MutableStateFlow(false)
+    val showOnlyTopRated: StateFlow<Boolean> = _showOnlyTopRated
 
     val filteredRecipes: StateFlow<List<RecipeWithIngredients>> = combine(
         repository.allRecipes,
         _searchQuery,
         _selectedCategories,
-        _showOnlyFavorites
-    ) { recipes, query, selectedCats, onlyFavorites ->
+        _showOnlyTopRated
+    ) { recipes, query, categories, onlyTopRated ->
         recipes.filter { recipeWithIngredients ->
             val recipe = recipeWithIngredients.recipe
             val matchesQuery = recipe.titel.contains(query, ignoreCase = true)
-            val matchesCategory = selectedCats.isEmpty() || recipe.kategorien.any { it in selectedCats }
-            val matchesFavorites = !onlyFavorites || recipe.istFavorit
-            matchesQuery && matchesCategory && matchesFavorites
+            val matchesCategory =
+                categories.isEmpty() || recipe.kategorien.any { categories.contains(it) }
+
+            // Filtert alle Rezepte heraus, die weniger als 4 Sterne haben, wenn der Top-Rated-Filter aktiv ist
+            val matchesTopRated = !onlyTopRated || recipe.bewertung >= 4
+
+            matchesQuery && matchesCategory && matchesTopRated
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun toggleShowOnlyFavorites() {
-        _showOnlyFavorites.value = !_showOnlyFavorites.value
+    fun toggleShowOnlyTopRated() {
+        _showOnlyTopRated.value = !_showOnlyTopRated.value
     }
 
     init {
@@ -91,12 +95,6 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
         _selectedCategories.value = emptySet()
     }
 
-    fun toggleFavorite(recipeId: Long, isFavorite: Boolean) {
-        viewModelScope.launch {
-            repository.updateFavoriteStatus(recipeId, isFavorite)
-        }
-    }
-
     fun deleteRecipe(recipeId: Long) {
         viewModelScope.launch {
             repository.deleteRecipe(recipeId)
@@ -113,35 +111,79 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
     private val _entryTitelError = MutableStateFlow(false)
     val entryTitelError: StateFlow<Boolean> = _entryTitelError
 
-    private val _entryKategorien = MutableStateFlow<List<String>>(emptyList())
-    val entryKategorien: StateFlow<List<String>> = _entryKategorien
+    private val _entryKategorien = MutableStateFlow<Set<String>>(emptySet())
+    val entryKategorien: StateFlow<Set<String>> = _entryKategorien
 
     private val _entryPortionen = MutableStateFlow(4)
     val entryPortionen: StateFlow<Int> = _entryPortionen
 
     data class IngredientEntry(val name: String, val menge: String, val einheit: String)
+
     private val _entryIngredients = MutableStateFlow(listOf(IngredientEntry("", "", "")))
     val entryIngredients: StateFlow<List<IngredientEntry>> = _entryIngredients
 
     private val _entryInstructions = MutableStateFlow(listOf(""))
     val entryInstructions: StateFlow<List<String>> = _entryInstructions
 
-    fun updateEntryTitel(value: String) { 
-        _entryTitel.value = value 
+    private val _entryArbeitszeit = MutableStateFlow("")
+    val entryArbeitszeit: StateFlow<String> = _entryArbeitszeit
+
+    private val _entryKochzeit = MutableStateFlow("")
+    val entryKochzeit: StateFlow<String> = _entryKochzeit
+
+    private val _entryNotizen = MutableStateFlow("")
+    val entryNotizen: StateFlow<String> = _entryNotizen
+
+    private val _entryQuelle = MutableStateFlow("")
+    val entryQuelle: StateFlow<String> = _entryQuelle
+
+    private val _entryBewertung = MutableStateFlow(0) // Neu statt Favorit
+    val entryBewertung: StateFlow<Int> = _entryBewertung
+
+    // NEU: State für das ausgewählte Bild (wird als String-Pfad gespeichert)
+    private val _entryBildPfad = MutableStateFlow<String?>(null)
+    val entryBildPfad: StateFlow<String?> = _entryBildPfad
+
+    fun updateEntryBewertung(value: Int) {
+        _entryBewertung.value = value.coerceIn(0, 5)
+    }
+
+    fun updateEntryArbeitszeit(value: String) { _entryArbeitszeit.value = value }
+    fun updateEntryKochzeit(value: String) { _entryKochzeit.value = value }
+    fun updateEntryNotizen(value: String) { _entryNotizen.value = value }
+    fun updateEntryQuelle(value: String) { _entryQuelle.value = value }
+
+    fun updateEntryTitel(value: String) {
+        _entryTitel.value = value
         if (value.isNotBlank()) {
             _entryTitelError.value = false
         }
     }
-    fun toggleEntryKategorie(kategorieName: String) {
-        val current =_entryKategorien.value.toMutableList()
-        if (current.contains(kategorieName)) {
-            current.remove(kategorieName)
+
+    fun toggleEntryKategorie(category: String) {
+        val current = _entryKategorien.value.toMutableSet()
+        if (current.contains(category)) {
+            current.remove(category)
         } else {
-            current.add(kategorieName)
+            current.add(category)
         }
         _entryKategorien.value = current
     }
-    fun updateEntryPortionen(value: Int) { if (value > 0) _entryPortionen.value = value }
+
+    fun addNewCategory(categoryName: String) {
+        if (categoryName.isBlank()) return
+        viewModelScope.launch {
+            val newCategory = Category(name = categoryName.trim())
+            // Wir nutzen die bestehende DAO-Schnittstelle über das Repository
+            repository.insertCategories(listOf(newCategory))
+        }
+    }
+
+    fun updateEntryBildPfad(value: String?) { _entryBildPfad.value = value }
+
+    fun updateEntryPortionen(value: Int) {
+        if (value > 0) _entryPortionen.value = value
+    }
 
     fun addEntryIngredient() {
         _entryIngredients.value = _entryIngredients.value + IngredientEntry("", "", "")
@@ -193,10 +235,19 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
             val recipe = de.ds.rezeptbuch.data.model.Recipe(
                 id = _editingRecipeId.value ?: 0,
                 titel = _entryTitel.value,
-                kategorien = _entryKategorien.value,
+                kategorien = _entryKategorien.value.toList(),
                 portionen = _entryPortionen.value,
                 anweisungen = _entryInstructions.value.filter { it.isNotBlank() },
-                istFavorit = false // Keep existing or reset? For simplicity reset.
+                bewertung = _entryBewertung.value, // HIER DIE STERNE SPEICHERN
+                arbeitszeit = _entryArbeitszeit.value.toIntOrNull(),
+                kochzeit = _entryKochzeit.value.toIntOrNull(),
+                notizen = _entryNotizen.value,
+                quelle = _entryQuelle.value,
+                bildpfad = _entryBildPfad.value,
+                kalorien = null,
+                kohlenhydrate = null,
+                eiweis = null,
+                fett = null
             )
             val ingredients = _entryIngredients.value.filter { it.name.isNotBlank() }.map {
                 de.ds.rezeptbuch.data.model.Ingredient(
@@ -206,7 +257,7 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
                     einheit = it.einheit
                 )
             }
-            
+
             if (_editingRecipeId.value == null) {
                 repository.insertRecipeWithIngredients(recipe, ingredients)
             } else {
@@ -214,7 +265,7 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
                 // Assuming we want to keep it if possible.
                 repository.updateRecipeWithIngredients(recipe, ingredients)
             }
-            
+
             resetEntryForm()
             onSuccess()
         }
@@ -223,12 +274,18 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
     fun startEditing(recipeWithIngredients: RecipeWithIngredients) {
         _editingRecipeId.value = recipeWithIngredients.recipe.id
         _entryTitel.value = recipeWithIngredients.recipe.titel
-        _entryKategorien.value = recipeWithIngredients.recipe.kategorien
+        _entryKategorien.value = recipeWithIngredients.recipe.kategorien.toSet()
         _entryPortionen.value = recipeWithIngredients.recipe.portionen
         _entryIngredients.value = recipeWithIngredients.ingredients.map {
             IngredientEntry(it.name, it.menge.toString(), it.einheit)
         }
         _entryInstructions.value = recipeWithIngredients.recipe.anweisungen
+        _entryBewertung.value = recipeWithIngredients.recipe.bewertung // Sterne laden
+        _entryArbeitszeit.value = recipeWithIngredients.recipe.arbeitszeit?.toString() ?: ""
+        _entryKochzeit.value = recipeWithIngredients.recipe.kochzeit?.toString() ?: ""
+        _entryNotizen.value = recipeWithIngredients.recipe.notizen ?: ""
+        _entryQuelle.value = recipeWithIngredients.recipe.quelle ?: ""
+        _entryBildPfad.value = recipeWithIngredients.recipe.bildpfad
     }
 
     fun startNewRecipe() {
@@ -239,10 +296,16 @@ class RecipeViewModel(private val repository: RecipeRepository) : ViewModel() {
         _editingRecipeId.value = null
         _entryTitel.value = ""
         _entryTitelError.value = false
-        _entryKategorien.value = emptyList()
+        _entryKategorien.value = emptySet()
         _entryPortionen.value = 4
         _entryIngredients.value = listOf(IngredientEntry("", "", ""))
         _entryInstructions.value = listOf("")
+        _entryBewertung.value = 0 // Sterne zurücksetzen
+        _entryArbeitszeit.value = ""
+        _entryKochzeit.value = ""
+        _entryNotizen.value = ""
+        _entryQuelle.value = ""
+        _entryBildPfad.value = null
     }
 }
 

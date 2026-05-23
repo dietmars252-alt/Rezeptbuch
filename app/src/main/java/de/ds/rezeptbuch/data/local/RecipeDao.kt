@@ -27,8 +27,8 @@ interface RecipeDao {
     fun getRecipesByCategory(categoryName: String): Flow<List<RecipeWithIngredients>>
 
     @Transaction
-    @Query("SELECT * FROM rezepte WHERE istFavorit = 1")
-    fun getFavoriteRecipes(): Flow<List<RecipeWithIngredients>>
+    @Query("SELECT * FROM rezepte WHERE bewertung >= 4")
+    fun getTopRatedRecipes(): Flow<List<RecipeWithIngredients>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRecipe(recipe: Recipe): Long
@@ -45,8 +45,8 @@ interface RecipeDao {
     @Query("DELETE FROM rezepte WHERE id = :recipeId")
     suspend fun deleteRecipe(recipeId: Long)
 
-    @Query("UPDATE rezepte SET istFavorit = :isFavorite WHERE id = :recipeId")
-    suspend fun updateFavoriteStatus(recipeId: Long, isFavorite: Boolean)
+    @Query("UPDATE rezepte SET bewertung = :stars WHERE id = :recipeId")
+    suspend fun updateRecipeRating(recipeId: Long, stars: Int)
 
     // Category operations
     @Query("SELECT * FROM kategorien")
