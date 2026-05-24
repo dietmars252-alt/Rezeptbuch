@@ -17,19 +17,6 @@ interface RecipeDao {
     @Query("SELECT * FROM rezepte")
     fun getAllRecipes(): Flow<List<RecipeWithIngredients>>
 
-    @Transaction
-    @Query("SELECT * FROM rezepte WHERE id = :recipeId")
-    fun getRecipeById(recipeId: Long): Flow<RecipeWithIngredients?>
-
-    // ANGEPASST: Nutzt jetzt 'kategorien' und sucht per LIKE-Operator nach dem String im JSON-Array
-    @Transaction
-    @Query("SELECT * FROM rezepte WHERE kategorien LIKE '%' || :categoryName || '%'")
-    fun getRecipesByCategory(categoryName: String): Flow<List<RecipeWithIngredients>>
-
-    @Transaction
-    @Query("SELECT * FROM rezepte WHERE bewertung >= 4")
-    fun getTopRatedRecipes(): Flow<List<RecipeWithIngredients>>
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRecipe(recipe: Recipe): Long
 
@@ -45,13 +32,14 @@ interface RecipeDao {
     @Query("DELETE FROM rezepte WHERE id = :recipeId")
     suspend fun deleteRecipe(recipeId: Long)
 
-    @Query("UPDATE rezepte SET bewertung = :stars WHERE id = :recipeId")
-    suspend fun updateRecipeRating(recipeId: Long, stars: Int)
-
     // Category operations
     @Query("SELECT * FROM kategorien")
     fun getAllCategories(): Flow<List<Category>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCategories(categories: List<Category>)
+
+    @Transaction
+    @Query("SELECT * FROM rezepte WHERE titel = :title LIMIT 1")
+    suspend fun getRecipeByTitle(title: String): RecipeWithIngredients?
 }

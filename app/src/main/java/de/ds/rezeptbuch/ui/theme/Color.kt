@@ -34,3 +34,37 @@ val TertiaryDark = Color(0xFFA0CFD2)
 val OnTertiaryDark = Color(0xFF00373A)
 val TertiaryContainerDark = Color(0xFF1E4D51)
 val OnTertiaryContainerDark = Color(0xFFBCEBEF)
+
+// Blue Palette
+val BluePrimaryLight = Color(0xFF0061A4)
+val BlueOnPrimaryLight = Color(0xFFFFFFFF)
+val BlueContainerLight = Color(0xFFD1E4FF)
+val BlueOnContainerLight = Color(0xFF001D36)
+
+val BluePrimaryDark = Color(0xFFA1C9FF)
+val BlueOnPrimaryDark = Color(0xFF003258)
+val BlueContainerDark = Color(0xFF00497D)
+val BlueOnContainerDark = Color(0xFFD1E4FF)
+
+// Red Palette
+val RedPrimaryLight = Color(0xFF9C4146)
+val RedOnPrimaryLight = Color(0xFFFFFFFF)
+val RedContainerLight = Color(0xFFFFDAD9)
+val RedOnContainerLight = Color(0xFF410009)
+
+val RedPrimaryDark = Color(0xFFFFB3B4)
+val RedOnPrimaryDark = Color(0xFF5F121C)
+val RedContainerDark = Color(0xFF7D2A30)
+val RedOnContainerDark = Color(0xFFFFDAD9)
+
+// Purple Palette
+val PurplePrimaryLight = Color(0xFF7A419C)
+val PurpleOnPrimaryLight = Color(0xFFFFFFFF)
+val PurpleContainerLight = Color(0xFFF3DAFF)
+val PurpleOnContainerLight = Color(0xFF2D0050)
+
+val PurplePrimaryDark = Color(0xFFE2B6FF)
+val PurpleOnPrimaryDark = Color(0xFF4A0067)
+val PurpleContainerDark = Color(0xFF612682)
+val PurpleOnContainerDark = Color(0xFFF3DAFF)
+

@@ -78,6 +78,10 @@ fun RecipeEntryScreen(
     val notizen by viewModel.entryNotizen.collectAsState()
     val quelle by viewModel.entryQuelle.collectAsState()
     val bildPfad by viewModel.entryBildPfad.collectAsState()
+    val kalorien by viewModel.entryKalorien.collectAsState()
+    val fett by viewModel.entryFett.collectAsState()
+    val eiweis by viewModel.entryEiweis.collectAsState()
+    val kohlenhydrate by viewModel.entryKohlenhydrate.collectAsState()
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -494,6 +498,60 @@ fun RecipeEntryScreen(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "Nährwerte pro Portion",
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = kalorien,
+                        onValueChange = viewModel::updateEntryKalorien,
+                        label = { Text("Kalorien") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedTextField(
+                        value = fett,
+                        onValueChange = viewModel::updateEntryFett,
+                        label = { Text("Fett (g)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = eiweis,
+                        onValueChange = viewModel::updateEntryEiweis,
+                        label = { Text("Eiweiß (g)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedTextField(
+                        value = kohlenhydrate,
+                        onValueChange = viewModel::updateEntryKohlenhydrate,
+                        label = { Text("KH (g)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(12.dp))
 

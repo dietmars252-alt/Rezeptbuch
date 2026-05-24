@@ -3,13 +3,15 @@ package de.ds.rezeptbuch.ui.screens
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffold
 import androidx.compose.material3.adaptive.layout.ListDetailPaneScaffoldRole
+import androidx.compose.material3.adaptive.layout.calculatePaneScaffoldDirective
 import androidx.compose.material3.adaptive.navigation.rememberListDetailPaneScaffoldNavigator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key // WICHTIGER IMPORT!
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -24,7 +26,19 @@ fun MainAdaptiveScreen(
     viewModel: RecipeViewModel,
     modifier: Modifier = Modifier
 ) {
-    val navigator = rememberListDetailPaneScaffoldNavigator<Long>()
+    // 1. Wir berechnen die Adaptive Info (V2 für L & XL Support)
+    val adaptiveInfo = currentWindowAdaptiveInfoV2()
+    
+    // 2. Wir erzwingen IMMER den Ein-Spalten-Modus, egal wie groß das Display ist.
+    val customDirective = calculatePaneScaffoldDirective(adaptiveInfo).copy(
+        maxHorizontalPartitions = 1
+    )
+
+    // 3. Navigator mit der erzwingenden Directive initialisieren
+    val navigator = rememberListDetailPaneScaffoldNavigator<Long>(
+        scaffoldDirective = customDirective
+    )
+    
     val scope = rememberCoroutineScope()
 
     var showEntryScreen by remember { mutableStateOf(false) }
@@ -34,6 +48,8 @@ fun MainAdaptiveScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedCategories by viewModel.selectedCategories.collectAsState()
     val showOnlyFavorites by viewModel.showOnlyTopRated.collectAsState()
+    val isDarkTheme by viewModel.isDarkTheme.collectAsState()
+    val colorScheme by viewModel.appColorScheme.collectAsState()
 
     BackHandler(enabled = showEntryScreen || navigator.canNavigateBack()) {
         if (showEntryScreen) {
@@ -53,7 +69,7 @@ fun MainAdaptiveScreen(
         )
     } else {
         ListDetailPaneScaffold(
-            directive = navigator.scaffoldDirective,
+            directive = customDirective,
             value = navigator.scaffoldValue,
             listPane = {
                 Surface(modifier = Modifier.fillMaxSize()) {
@@ -79,6 +95,13 @@ fun MainAdaptiveScreen(
                             viewModel.startNewRecipe()
                             showEntryScreen = true
                         },
+                        onImportJsonClick = viewModel::importRecipesFromJson,
+                        onImportMcbClick = viewModel::importRecipesFromMcb,
+                        onExportJsonClick = viewModel::exportRecipesToJson,
+                        isDarkTheme = isDarkTheme,
+                        onThemeToggle = viewModel::toggleTheme,
+                        colorScheme = colorScheme,
+                        onColorSchemeChange = viewModel::updateColorScheme,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -88,15 +111,13 @@ fun MainAdaptiveScreen(
                     val selectedRecipeId = navigator.currentDestination?.contentKey
                     val selectedRecipe = recipes.find { it.recipe.id == selectedRecipeId }
 
-                    if (selectedRecipe != null) {
-                        val currentPortions by viewModel.getPortionsForRecipe(
-                            selectedRecipe.recipe.id,
-                            selectedRecipe.recipe.portionen
-                        ).collectAsState()
+                    key(selectedRecipeId) {
+                        if (selectedRecipe != null) {
+                            val currentPortions by viewModel.getPortionsForRecipe(
+                                selectedRecipe.recipe.id,
+                                selectedRecipe.recipe.portionen
+                            ).collectAsState()
 
-                        // key() zerstört den alten Zustand vollständig und erzwingt
-                        // bei jedem Rezeptwechsel ein frisches rememberPagerState(initialPage = 0)
-                        key(selectedRecipe.recipe.id) {
                             RecipeDetailScreen(
                                 recipeWithIngredients = selectedRecipe,
                                 currentPortions = currentPortions,
@@ -123,21 +144,21 @@ fun MainAdaptiveScreen(
                                 },
                                 modifier = Modifier.fillMaxSize()
                             )
+                        } else {
+                            RecipeDetailScreen(
+                                recipeWithIngredients = null,
+                                currentPortions = 0,
+                                onUpdatePortions = {},
+                                onBackClick = {
+                                    scope.launch {
+                                        navigator.navigateBack()
+                                    }
+                                },
+                                onEditClick = {},
+                                onDeleteClick = {},
+                                modifier = Modifier.fillMaxSize()
+                            )
                         }
-                    } else {
-                        RecipeDetailScreen(
-                            recipeWithIngredients = null,
-                            currentPortions = 0,
-                            onUpdatePortions = {},
-                            onBackClick = {
-                                scope.launch {
-                                    navigator.navigateBack()
-                                }
-                            },
-                            onEditClick = {},
-                            onDeleteClick = {},
-                            modifier = Modifier.fillMaxSize()
-                        )
                     }
                 }
             },

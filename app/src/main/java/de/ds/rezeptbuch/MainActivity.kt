@@ -6,7 +6,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import de.ds.rezeptbuch.data.local.AppDatabase
@@ -20,14 +23,21 @@ class MainActivity : ComponentActivity() {
     private val database by lazy { AppDatabase.getDatabase(this) }
     private val repository by lazy { RecipeRepository(database.recipeDao()) }
     private val viewModel: RecipeViewModel by viewModels {
-        RecipeViewModelFactory(repository)
+        RecipeViewModelFactory(application, repository)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            RezeptbuchTheme {
+            val isDarkThemeOverride by viewModel.isDarkTheme.collectAsState()
+            val colorSchemeSelection by viewModel.appColorScheme.collectAsState()
+            val darkTheme = isDarkThemeOverride ?: isSystemInDarkTheme()
+
+            RezeptbuchTheme(
+                darkTheme = darkTheme,
+                colorSchemeSelection = colorSchemeSelection
+            ) {
                 MainAdaptiveScreen(
                     viewModel = viewModel,
                     modifier = Modifier.fillMaxSize()
