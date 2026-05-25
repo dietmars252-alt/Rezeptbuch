@@ -226,9 +226,9 @@ class JsonImportService(private val repository: RecipeRepository) {
         if (pfad.startsWith("http")) return pfad
         val cleanPfad = pfad.removePrefix("/")
         return if (cleanPfad.startsWith("uploads")) {
-            "https://rezepte.schroeer-privat.de/$cleanPfad"
+            "https://rezepte-ds.schroeer-privat.de/$cleanPfad"
         } else {
-            "https://rezepte.schroeer-privat.de/uploads/$cleanPfad"
+            "https://rezepte-ds.schroeer-privat.de/uploads/$cleanPfad"
         }
     }
 }

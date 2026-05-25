@@ -12,7 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 enum class AppColorScheme {
-    GREEN, BLUE, RED, PURPLE
+    GREEN, BLUE, RED, PURPLE, ORANGE, PINK, TEAL, BROWN
 }
 
 private fun getLightColorScheme(base: AppColorScheme): ColorScheme {
@@ -48,6 +48,30 @@ private fun getLightColorScheme(base: AppColorScheme): ColorScheme {
             onPrimary = PurpleOnPrimaryLight,
             primaryContainer = PurpleContainerLight,
             onPrimaryContainer = PurpleOnContainerLight
+        )
+        AppColorScheme.ORANGE -> lightColorScheme(
+            primary = OrangePrimaryLight,
+            onPrimary = OrangeOnPrimaryLight,
+            primaryContainer = OrangeContainerLight,
+            onPrimaryContainer = OrangeOnContainerLight
+        )
+        AppColorScheme.PINK -> lightColorScheme(
+            primary = PinkPrimaryLight,
+            onPrimary = PinkOnPrimaryLight,
+            primaryContainer = PinkContainerLight,
+            onPrimaryContainer = PinkOnContainerLight
+        )
+        AppColorScheme.TEAL -> lightColorScheme(
+            primary = TealPrimaryLight,
+            onPrimary = TealOnPrimaryLight,
+            primaryContainer = TealContainerLight,
+            onPrimaryContainer = TealOnContainerLight
+        )
+        AppColorScheme.BROWN -> lightColorScheme(
+            primary = BrownPrimaryLight,
+            onPrimary = BrownOnPrimaryLight,
+            primaryContainer = BrownContainerLight,
+            onPrimaryContainer = BrownOnContainerLight
         )
     }
 }
@@ -85,6 +109,30 @@ private fun getDarkColorScheme(base: AppColorScheme): ColorScheme {
             onPrimary = PurpleOnPrimaryDark,
             primaryContainer = PurpleContainerDark,
             onPrimaryContainer = PurpleOnContainerDark
+        )
+        AppColorScheme.ORANGE -> darkColorScheme(
+            primary = OrangePrimaryDark,
+            onPrimary = OrangeOnPrimaryDark,
+            primaryContainer = OrangeContainerDark,
+            onPrimaryContainer = OrangeOnContainerDark
+        )
+        AppColorScheme.PINK -> darkColorScheme(
+            primary = PinkPrimaryDark,
+            onPrimary = PinkOnPrimaryDark,
+            primaryContainer = PinkContainerDark,
+            onPrimaryContainer = PinkOnContainerDark
+        )
+        AppColorScheme.TEAL -> darkColorScheme(
+            primary = TealPrimaryDark,
+            onPrimary = TealOnPrimaryDark,
+            primaryContainer = TealContainerDark,
+            onPrimaryContainer = TealOnContainerDark
+        )
+        AppColorScheme.BROWN -> darkColorScheme(
+            primary = BrownPrimaryDark,
+            onPrimary = BrownOnPrimaryDark,
+            primaryContainer = BrownContainerDark,
+            onPrimaryContainer = BrownOnContainerDark
         )
     }
 }

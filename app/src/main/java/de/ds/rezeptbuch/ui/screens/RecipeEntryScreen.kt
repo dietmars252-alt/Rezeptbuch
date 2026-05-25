@@ -39,6 +39,7 @@ import androidx.compose.material3.InputChip
 import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -93,43 +94,47 @@ fun RecipeEntryScreen(
         }
     )
 
-    Column(modifier = modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { Text(if (editingId == null) "Neues Rezept" else "Rezept bearbeiten") },
-            navigationIcon = {
-                IconButton(onClick = onBackClick) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                        contentDescription = "Abbrechen",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            },
-            actions = {
-                IconButton(onClick = { viewModel.saveNewRecipe(onSaveSuccess) }) {
-                    Icon(
-                        imageVector = Icons.Rounded.Save,
-                        contentDescription = "Speichern",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            ),
-            windowInsets = WindowInsets.statusBars
-        )
-
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(if (editingId == null) "Neues Rezept" else "Rezept bearbeiten") },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = "Abbrechen",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { viewModel.saveNewRecipe(onSaveSuccess) }) {
+                        Icon(
+                            imageVector = Icons.Rounded.Save,
+                            contentDescription = "Speichern",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ),
+                windowInsets = WindowInsets.statusBars
+            )
+        },
+        modifier = modifier.fillMaxSize()
+    ) { padding ->
         LazyColumn(
             modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .padding(16.dp),
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // NEU: Bild-Auswahlbereich ganz oben im Formular
             item {
+                Spacer(modifier = Modifier.height(16.dp))
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()

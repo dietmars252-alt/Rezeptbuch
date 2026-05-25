@@ -1,14 +1,12 @@
 package de.ds.rezeptbuch.ui.screens
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
@@ -27,23 +25,19 @@ import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.ArrowForwardIos
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Clear
-import androidx.compose.material.icons.rounded.FileDownload
-import androidx.compose.material.icons.rounded.Palette
-import androidx.compose.material.icons.rounded.Refresh
-import androidx.compose.material.icons.rounded.Save
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.twotone.Star
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -60,26 +54,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import de.ds.rezeptbuch.data.model.Category
 import de.ds.rezeptbuch.data.model.RecipeWithIngredients
-import de.ds.rezeptbuch.ui.theme.AppColorScheme
-import kotlinx.coroutines.launch
-import java.io.InputStream
-
-private enum class MenuType {
-    MAIN, BACKUP, DESIGN
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,69 +76,10 @@ fun RecipeListScreen(
     onToggleShowOnlyTopRated: () -> Unit,
     onRecipeClick: (RecipeWithIngredients) -> Unit,
     onAddRecipeClick: () -> Unit,
-    onImportJsonClick: (String) -> Unit,
-    onImportMcbClick: (InputStream) -> Unit,
-    onExportJsonClick: suspend () -> String,
-    isDarkTheme: Boolean?,
-    onThemeToggle: (Boolean?) -> Unit,
-    colorScheme: AppColorScheme,
-    onColorSchemeChange: (AppColorScheme) -> Unit,
+    onSettingsClick: () -> Unit,
+    isGridLayout: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var showMenu by remember { mutableStateOf(false) }
-    var currentSubMenu by remember { mutableStateOf(MenuType.MAIN) }
-
-    // Launcher zum Erstellen einer Backup-Datei (Export)
-    val createDocumentLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json")
-    ) { uri ->
-        uri?.let {
-            scope.launch {
-                try {
-                    val jsonString = onExportJsonClick()
-                    context.contentResolver.openOutputStream(it)?.use { outputStream ->
-                        outputStream.write(jsonString.toByteArray())
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-        }
-    }
-
-    // Launcher zum Auswählen einer Backup-Datei (Wiederherstellen/Import)
-    val restoreLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri ->
-        uri?.let {
-            try {
-                context.contentResolver.openInputStream(it)?.use { inputStream ->
-                    val jsonString = inputStream.bufferedReader().use { reader -> reader.readText() }
-                    onImportJsonClick(jsonString)
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    // Launcher zum Auswählen einer .mcb Datei (My Cookbook Import)
-    val mcbLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri ->
-        uri?.let {
-            try {
-                context.contentResolver.openInputStream(it)?.let { inputStream ->
-                    onImportMcbClick(inputStream)
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             TopAppBar(
@@ -169,99 +91,8 @@ fun RecipeListScreen(
                     actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ),
                 actions = {
-                    IconButton(onClick = { 
-                        currentSubMenu = MenuType.MAIN
-                        showMenu = true 
-                    }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Menü öffnen")
-                    }
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false }
-                    ) {
-                        when (currentSubMenu) {
-                            MenuType.MAIN -> {
-                                DropdownMenuItem(
-                                    text = { Text("Backup & Import") },
-                                    onClick = { currentSubMenu = MenuType.BACKUP },
-                                    leadingIcon = { Icon(Icons.Rounded.Save, null) },
-                                    trailingIcon = { Icon(Icons.AutoMirrored.Rounded.ArrowForwardIos, null, modifier = Modifier.size(12.dp)) }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Darstellung") },
-                                    onClick = { currentSubMenu = MenuType.DESIGN },
-                                    leadingIcon = { Icon(Icons.Rounded.Palette, null) },
-                                    trailingIcon = { Icon(Icons.AutoMirrored.Rounded.ArrowForwardIos, null, modifier = Modifier.size(12.dp)) }
-                                )
-                            }
-                            MenuType.BACKUP -> {
-                                DropdownMenuItem(
-                                    text = { Text("Zurück") },
-                                    onClick = { currentSubMenu = MenuType.MAIN },
-                                    leadingIcon = { Icon(Icons.AutoMirrored.Rounded.ArrowBack, null) }
-                                )
-                                HorizontalDivider()
-                                DropdownMenuItem(
-                                    text = { Text("Backup erstellen") },
-                                    onClick = {
-                                        showMenu = false
-                                        createDocumentLauncher.launch("rezepte_backup.json")
-                                    },
-                                    leadingIcon = { Icon(Icons.Rounded.Save, null) }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Backup wiederherstellen") },
-                                    onClick = {
-                                        showMenu = false
-                                        restoreLauncher.launch("application/json")
-                                    },
-                                    leadingIcon = { Icon(Icons.Rounded.Refresh, null) }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("My Cookbook (.mcb) importieren") },
-                                    onClick = {
-                                        showMenu = false
-                                        mcbLauncher.launch("*/*")
-                                    },
-                                    leadingIcon = { Icon(Icons.Rounded.FileDownload, null) }
-                                )
-                            }
-                            MenuType.DESIGN -> {
-                                DropdownMenuItem(
-                                    text = { Text("Zurück") },
-                                    onClick = { currentSubMenu = MenuType.MAIN },
-                                    leadingIcon = { Icon(Icons.AutoMirrored.Rounded.ArrowBack, null) }
-                                )
-                                HorizontalDivider()
-                                // Theme Mode
-                                Text("Modus", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
-                                DropdownMenuItem(
-                                    text = { Text("System") },
-                                    onClick = { onThemeToggle(null); showMenu = false },
-                                    trailingIcon = { if (isDarkTheme == null) Icon(Icons.Rounded.Check, null) }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Hell") },
-                                    onClick = { onThemeToggle(false); showMenu = false },
-                                    trailingIcon = { if (isDarkTheme == false) Icon(Icons.Rounded.Check, null) }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Dunkel") },
-                                    onClick = { onThemeToggle(true); showMenu = false },
-                                    trailingIcon = { if (isDarkTheme == true) Icon(Icons.Rounded.Check, null) }
-                                )
-                                HorizontalDivider()
-                                // Color Scheme
-                                Text("Farbschema", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
-                                AppColorScheme.entries.forEach { scheme ->
-                                    DropdownMenuItem(
-                                        text = { Text(scheme.name.lowercase().replaceFirstChar { it.uppercase() }) },
-                                        onClick = { onColorSchemeChange(scheme); showMenu = false },
-                                        trailingIcon = { if (colorScheme == scheme) Icon(Icons.Rounded.Check, null) }
-                                    )
-                                }
-                            }
-                        }
+                    IconButton(onClick = onSettingsClick) {
+                        Icon(Icons.Rounded.Settings, contentDescription = "Einstellungen")
                     }
                 }
             )
@@ -271,7 +102,13 @@ fun RecipeListScreen(
                 tonalElevation = 0.dp,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))) {
+                Column(
+                    modifier = Modifier.windowInsetsPadding(
+                        WindowInsets.safeDrawing.only(
+                            WindowInsetsSides.Horizontal
+                        )
+                    )
+                ) {
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = onSearchQueryChange,
@@ -320,23 +157,47 @@ fun RecipeListScreen(
 
             val safePadding = WindowInsets.safeDrawing.asPaddingValues()
             val layoutDirection = LocalLayoutDirection.current
-            
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentPadding = PaddingValues(
-                    start = safePadding.calculateStartPadding(layoutDirection),
-                    end = safePadding.calculateEndPadding(layoutDirection),
-                    bottom = safePadding.calculateBottomPadding() + 80.dp
-                )
-            ) {
-                items(recipes) { recipeWithIngredients ->
-                    RecipeItem(
-                        recipeWithIngredients = recipeWithIngredients,
-                        onClick = { onRecipeClick(recipeWithIngredients) }
+
+            if (isGridLayout) {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentPadding = PaddingValues(
+                        start = safePadding.calculateStartPadding(layoutDirection) + 16.dp,
+                        end = safePadding.calculateEndPadding(layoutDirection) + 16.dp,
+                        top = 16.dp,
+                        bottom = safePadding.calculateBottomPadding() + 80.dp
+                    ),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(recipes) { recipeWithIngredients ->
+                        RecipeGridItem(
+                            recipeWithIngredients = recipeWithIngredients,
+                            onClick = { onRecipeClick(recipeWithIngredients) }
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentPadding = PaddingValues(
+                        start = safePadding.calculateStartPadding(layoutDirection),
+                        end = safePadding.calculateEndPadding(layoutDirection),
+                        bottom = safePadding.calculateBottomPadding() + 80.dp
                     )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                ) {
+                    items(recipes) { recipeWithIngredients ->
+                        RecipeItem(
+                            recipeWithIngredients = recipeWithIngredients,
+                            onClick = { onRecipeClick(recipeWithIngredients) }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    }
                 }
             }
         }
@@ -409,6 +270,49 @@ fun CategoryFilters(
 }
 
 @Composable
+fun RecipeGridItem(
+    recipeWithIngredients: RecipeWithIngredients,
+    onClick: () -> Unit
+) {
+    val recipe = recipeWithIngredients.recipe
+    androidx.compose.material3.Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.primaryContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp)
+            ) {
+                RecipeImage(
+                    bildPfad = recipe.bildpfad,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+            Text(
+                text = recipe.titel,
+                style = MaterialTheme.typography.titleSmall,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(12.dp)
+            )
+        }
+    }
+}
+
+@Composable
 fun RecipeItem(
     recipeWithIngredients: RecipeWithIngredients,
     onClick: () -> Unit
@@ -444,33 +348,9 @@ fun RecipeItem(
                 Text(
                     text = recipe.titel,
                     style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "${recipe.kategorien.joinToString(", ")} • ${recipe.portionen} Portionen",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            // NEU: Reine Anzeige-Sterne ohne umschließenden IconButton
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                for (i in 1..5) {
-                    val isStarred = i <= recipe.bewertung
-                    Icon(
-                        imageVector = if (isStarred) Icons.Rounded.Star else Icons.TwoTone.Star,
-                        contentDescription = null, // Dekoratives Element
-                        tint = if (isStarred) androidx.compose.ui.graphics.Color(0xFFFFB300) else MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                            alpha = 0.3f
-                        ),
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
             }
         }
     }

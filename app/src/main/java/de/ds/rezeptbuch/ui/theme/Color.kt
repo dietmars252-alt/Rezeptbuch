@@ -68,3 +68,43 @@ val PurpleOnPrimaryDark = Color(0xFF4A0067)
 val PurpleContainerDark = Color(0xFF612682)
 val PurpleOnContainerDark = Color(0xFFF3DAFF)
 
+// Orange Palette
+val OrangePrimaryLight = Color(0xFF8B5000)
+val OrangeOnPrimaryLight = Color(0xFFFFFFFF)
+val OrangeContainerLight = Color(0xFFFFDCBE)
+val OrangeOnContainerLight = Color(0xFF2C1600)
+val OrangePrimaryDark = Color(0xFFFFB870)
+val OrangeOnPrimaryDark = Color(0xFF4A2800)
+val OrangeContainerDark = Color(0xFF693C00)
+val OrangeOnContainerDark = Color(0xFFFFDCBE)
+
+// Pink Palette
+val PinkPrimaryLight = Color(0xFF984061)
+val PinkOnPrimaryLight = Color(0xFFFFFFFF)
+val PinkContainerLight = Color(0xFFFFD9E2)
+val PinkOnContainerLight = Color(0xFF3E001D)
+val PinkPrimaryDark = Color(0xFFFFB1C8)
+val PinkOnPrimaryDark = Color(0xFF5E1133)
+val PinkContainerDark = Color(0xFF7B2949)
+val PinkOnContainerDark = Color(0xFFFFD9E2)
+
+// Teal Palette
+val TealPrimaryLight = Color(0xFF006A6A)
+val TealOnPrimaryLight = Color(0xFFFFFFFF)
+val TealContainerLight = Color(0xFF00F0F0)
+val TealOnContainerLight = Color(0xFF002020)
+val TealPrimaryDark = Color(0xFF4DDADA)
+val TealOnPrimaryDark = Color(0xFF003737)
+val TealContainerDark = Color(0xFF004F4F)
+val TealOnContainerDark = Color(0xFF00F0F0)
+
+// Brown Palette
+val BrownPrimaryLight = Color(0xFF8F4C38)
+val BrownOnPrimaryLight = Color(0xFFFFFFFF)
+val BrownContainerLight = Color(0xFFFFDBD1)
+val BrownOnContainerLight = Color(0xFF3A0B01)
+val BrownPrimaryDark = Color(0xFFFFB5A0)
+val BrownOnPrimaryDark = Color(0xFF561F0F)
+val BrownContainerDark = Color(0xFF723523)
+val BrownOnContainerDark = Color(0xFFFFDBD1)
+

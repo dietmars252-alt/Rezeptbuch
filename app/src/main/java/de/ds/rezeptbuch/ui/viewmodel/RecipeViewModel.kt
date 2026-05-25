@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.InputStream
+import java.text.Collator
+import java.util.Locale
 
 class RecipeViewModel(
     application: Application,
@@ -32,6 +34,10 @@ class RecipeViewModel(
     val selectedCategories: StateFlow<Set<String>> = _selectedCategories
 
     val categories: StateFlow<List<Category>> = repository.allCategories
+        .map { list ->
+            val collator = Collator.getInstance(Locale.GERMANY)
+            list.sortedWith { a, b -> collator.compare(a.name, b.name) }
+        }
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     private val _portionMap = MutableStateFlow<Map<Long, Int>>(emptyMap())
@@ -57,6 +63,7 @@ class RecipeViewModel(
         _selectedCategories,
         _showOnlyTopRated
     ) { recipes, query, categories, onlyTopRated ->
+        val collator = Collator.getInstance(Locale.GERMANY)
         recipes.filter { recipeWithIngredients ->
             val recipe = recipeWithIngredients.recipe
             val matchesQuery = recipe.titel.contains(query, ignoreCase = true)
@@ -66,7 +73,7 @@ class RecipeViewModel(
             val matchesTopRated = !onlyTopRated || recipe.bewertung >= 4
 
             matchesQuery && matchesCategory && matchesTopRated
-        }.sortedBy { it.recipe.titel.lowercase() }
+        }.sortedWith { a, b -> collator.compare(a.recipe.titel, b.recipe.titel) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun toggleShowOnlyTopRated() {
@@ -145,12 +152,26 @@ class RecipeViewModel(
     private val _appColorScheme = MutableStateFlow(AppColorScheme.GREEN)
     val appColorScheme: StateFlow<AppColorScheme> = _appColorScheme
 
+    private val _keepScreenOn = MutableStateFlow(false)
+    val keepScreenOn: StateFlow<Boolean> = _keepScreenOn
+
+    private val _isGridLayout = MutableStateFlow(false)
+    val isGridLayout: StateFlow<Boolean> = _isGridLayout
+
     fun toggleTheme(isDark: Boolean?) {
         _isDarkTheme.value = isDark
     }
 
     fun updateColorScheme(scheme: AppColorScheme) {
         _appColorScheme.value = scheme
+    }
+
+    fun toggleKeepScreenOn() {
+        _keepScreenOn.value = !_keepScreenOn.value
+    }
+
+    fun toggleGridLayout() {
+        _isGridLayout.value = !_isGridLayout.value
     }
 
     private val _entryKalorien = MutableStateFlow("")
@@ -219,6 +240,19 @@ class RecipeViewModel(
         viewModelScope.launch {
             val newCategory = Category(name = categoryName.trim())
             repository.insertCategories(listOf(newCategory))
+        }
+    }
+
+    fun deleteCategory(categoryName: String) {
+        viewModelScope.launch {
+            repository.deleteCategory(categoryName)
+        }
+    }
+
+    fun renameCategory(oldName: String, newName: String) {
+        if (newName.isBlank()) return
+        viewModelScope.launch {
+            repository.renameCategory(oldName, newName.trim())
         }
     }
 

@@ -4,7 +4,6 @@ import android.app.Activity
 import android.view.WindowManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -25,12 +24,10 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Remove
-import androidx.compose.material.icons.rounded.Restaurant
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.twotone.Star
 import androidx.compose.material3.AlertDialog
@@ -49,16 +46,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -75,6 +69,7 @@ import java.text.DecimalFormat
 fun RecipeDetailScreen(
     recipeWithIngredients: RecipeWithIngredients?,
     currentPortions: Int,
+    keepScreenOnGlobal: Boolean,
     onUpdatePortions: (Int) -> Unit,
     onBackClick: () -> Unit,
     onEditClick: (RecipeWithIngredients) -> Unit,
@@ -93,11 +88,9 @@ fun RecipeDetailScreen(
     val decimalFormat = DecimalFormat("#.##")
     val scope = rememberCoroutineScope()
 
-    var isCookingMode by remember { mutableStateOf(value = false) }
-
-    if (isCookingMode) {
+    if (keepScreenOnGlobal) {
         val context = LocalContext.current
-        DisposableEffect(Unit) {
+        DisposableEffect(keepScreenOnGlobal) {
             val window = (context as? Activity)?.window
             window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             onDispose {
@@ -164,12 +157,6 @@ fun RecipeDetailScreen(
                 }
             },
             actions = {
-                IconButton(onClick = { isCookingMode = !isCookingMode }) {
-                    Icon(
-                        if (isCookingMode) Icons.Rounded.Restaurant else Icons.Outlined.Restaurant,
-                        contentDescription = "Kochmodus"
-                    )
-                }
                 IconButton(onClick = { onEditClick(recipeWithIngredients) }) {
                     Icon(Icons.Rounded.Edit, contentDescription = "Bearbeiten")
                 }
@@ -179,188 +166,139 @@ fun RecipeDetailScreen(
             }
         )
 
-        if (isCookingMode) {
-            BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                val safeBottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp
-                val commonPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = safeBottomPadding)
-                
-                if (maxWidth > 600.dp) {
-                    // Tablet/Landscape: Nebeneinander
-                    Row(modifier = Modifier.fillMaxSize()) {
-                        IngredientsList(
-                            ingredients = ingredients,
-                            recipePortions = recipe.portionen,
-                            currentPortions = currentPortions,
-                            decimalFormat = decimalFormat,
-                            contentPadding = commonPadding,
-                            onUpdatePortions = onUpdatePortions,
-                            modifier = Modifier.weight(0.4f)
-                        )
-                        VerticalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
-                        InstructionsList(
-                            instructions = recipe.anweisungen,
-                            notizen = recipe.notizen,
-                            contentPadding = commonPadding,
-                            modifier = Modifier.weight(0.6f)
-                        )
-                    }
-                } else {
-                    // Phone/Portrait: Übereinander mit festem Split oder einfach untereinander
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        IngredientsList(
-                            ingredients = ingredients,
-                            recipePortions = recipe.portionen,
-                            currentPortions = currentPortions,
-                            decimalFormat = decimalFormat,
-                            contentPadding = commonPadding,
-                            onUpdatePortions = onUpdatePortions,
-                            modifier = Modifier.weight(0.4f)
-                        )
-                        HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
-                        InstructionsList(
-                            instructions = recipe.anweisungen,
-                            notizen = recipe.notizen,
-                            contentPadding = commonPadding,
-                            modifier = Modifier.weight(0.6f)
-                        )
-                    }
-                }
+        // Die Tab-Leiste zur Navigation
+        SecondaryTabRow(
+            selectedTabIndex = pagerState.currentPage,
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        ) {
+            val tabs = listOf("Info", "Zutaten", "Anweisungen")
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = pagerState.currentPage == index,
+                    onClick = {
+                        scope.launch { pagerState.animateScrollToPage(index) }
+                    },
+                    text = { Text(title) }
+                )
             }
-        } else {
-            // Die Tab-Leiste zur Navigation
-            SecondaryTabRow(
-                selectedTabIndex = pagerState.currentPage,
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            ) {
-                val tabs = listOf("Info", "Zutaten", "Schritte")
-                tabs.forEachIndexed { index, title ->
-                    Tab(
-                        selected = pagerState.currentPage == index,
-                        onClick = {
-                            scope.launch { pagerState.animateScrollToPage(index) }
-                        },
-                        text = { Text(title) }
-                    )
-                }
-            }
+        }
 
-            // Der HorizontalPager für das Swipen
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.Top
-            ) { pageIndex ->
-                val safeBottomPadding =
-                    WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp
+        // Der HorizontalPager für das Swipen
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.Top
+        ) { pageIndex ->
+            val safeBottomPadding =
+                WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp
 
-                when (pageIndex) {
-                    0 -> { // SEITE 1: ALLGEMEINE INFOS
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = safeBottomPadding),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            item {
-                                Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(200.dp),
-                                    shape = MaterialTheme.shapes.large
-                                ) {
-                                    RecipeImage(
-                                        bildPfad = recipe.bildpfad,
-                                        contentDescription = recipe.titel,
-                                        modifier = Modifier.fillMaxSize()
-                                    )
-                                }
+            when (pageIndex) {
+                0 -> { // SEITE 1: ALLGEMEINE INFOS
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = safeBottomPadding),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        item {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(200.dp),
+                                shape = MaterialTheme.shapes.large
+                            ) {
+                                RecipeImage(
+                                    bildPfad = recipe.bildpfad,
+                                    contentDescription = recipe.titel,
+                                    modifier = Modifier.fillMaxSize()
+                                )
                             }
-                            item {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                        }
+                        item {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                FlowRow(
+                                    modifier = Modifier.weight(1f),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
-                                    FlowRow(
-                                        modifier = Modifier.weight(1f),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                                    ) {
-                                        recipe.kategorien.forEach { kat ->
-                                            AssistChip(onClick = {}, label = { Text(kat) })
-                                        }
+                                    recipe.kategorien.forEach { kat ->
+                                        AssistChip(onClick = {}, label = { Text(kat) })
                                     }
-                                    Row {
-                                        for (i in 1..5) {
-                                            Icon(
-                                                imageVector = if (i <= recipe.bewertung) Icons.Rounded.Star else Icons.TwoTone.Star,
-                                                contentDescription = null,
-                                                tint = if (i <= recipe.bewertung) androidx.compose.ui.graphics.Color(0xFFFFB300) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
-                                                modifier = Modifier.size(20.dp)
-                                            )
-                                        }
+                                }
+                                Row {
+                                    for (i in 1..5) {
+                                        Icon(
+                                            imageVector = if (i <= recipe.bewertung) Icons.Rounded.Star else Icons.TwoTone.Star,
+                                            contentDescription = null,
+                                            tint = if (i <= recipe.bewertung) androidx.compose.ui.graphics.Color(0xFFFFB300) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                                            modifier = Modifier.size(20.dp)
+                                        )
                                     }
                                 }
                             }
+                        }
 
+                        item {
+                            // Zeiten & Quelle
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    if (recipe.arbeitszeit != null) Text("Arbeitszeit: ${recipe.arbeitszeit} Min.", style = MaterialTheme.typography.bodyLarge)
+                                    if (recipe.kochzeit != null) Text("Koch-/Backzeit: ${recipe.kochzeit} Min.", style = MaterialTheme.typography.bodyLarge)
+                                    if (!recipe.quelle.isNullOrBlank()) Text("Quelle: ${recipe.quelle}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+                                }
+                            }
+                        }
+
+                        // Nährwerte an der alten Stelle der Notizen
+                        if (recipe.kalorien != null || recipe.fett != null || recipe.eiweis != null || recipe.kohlenhydrate != null) {
                             item {
-                                // Zeiten & Quelle
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f))
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        if (recipe.arbeitszeit != null) Text("Arbeitszeit: ${recipe.arbeitszeit} Min.", style = MaterialTheme.typography.bodyLarge)
-                                        if (recipe.kochzeit != null) Text("Koch-/Backzeit: ${recipe.kochzeit} Min.", style = MaterialTheme.typography.bodyLarge)
-                                        if (!recipe.quelle.isNullOrBlank()) Text("Quelle: ${recipe.quelle}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
-                                    }
-                                }
-                            }
-
-                            // Nährwerte an der alten Stelle der Notizen
-                            if (recipe.kalorien != null || recipe.fett != null || recipe.eiweis != null || recipe.kohlenhydrate != null) {
-                                item {
-                                    Card(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f))
-                                    ) {
-                                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                            Text("Nährwerte pro Portion", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                                if (recipe.kalorien != null) Text("Kalorien: ${recipe.kalorien} kcal")
-                                                if (recipe.fett != null) Text("Fett: ${decimalFormat.format(recipe.fett)} g")
-                                            }
-                                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                                if (recipe.eiweis != null) Text("Eiweiß: ${decimalFormat.format(recipe.eiweis)} g")
-                                                if (recipe.kohlenhydrate != null) Text("KH: ${decimalFormat.format(recipe.kohlenhydrate)} g")
-                                            }
+                                        Text("Nährwerte pro Portion", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                            if (recipe.kalorien != null) Text("Kalorien: ${recipe.kalorien} kcal")
+                                            if (recipe.fett != null) Text("Fett: ${decimalFormat.format(recipe.fett)} g")
+                                        }
+                                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                            if (recipe.eiweis != null) Text("Eiweiß: ${decimalFormat.format(recipe.eiweis)} g")
+                                            if (recipe.kohlenhydrate != null) Text("KH: ${decimalFormat.format(recipe.kohlenhydrate)} g")
                                         }
                                     }
                                 }
                             }
                         }
                     }
+                }
 
-                    1 -> { // SEITE 2: ZUTATEN
-                        IngredientsList(
-                            ingredients = ingredients,
-                            recipePortions = recipe.portionen,
-                            currentPortions = currentPortions,
-                            decimalFormat = decimalFormat,
-                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = safeBottomPadding),
-                            onUpdatePortions = onUpdatePortions
-                        )
-                    }
+                1 -> { // SEITE 2: ZUTATEN
+                    IngredientsList(
+                        ingredients = ingredients,
+                        recipePortions = recipe.portionen,
+                        currentPortions = currentPortions,
+                        decimalFormat = decimalFormat,
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = safeBottomPadding),
+                        onUpdatePortions = onUpdatePortions
+                    )
+                }
 
-                    2 -> { // SEITE 3: ZUBEREITUNG / SCHRITTE
-                        InstructionsList(
-                            instructions = recipe.anweisungen,
-                            notizen = recipe.notizen,
-                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = safeBottomPadding)
-                        )
-                    }
+                2 -> { // SEITE 3: ZUBEREITUNG / Anweisungen
+                    InstructionsList(
+                        instructions = recipe.anweisungen,
+                        notizen = recipe.notizen,
+                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = safeBottomPadding)
+                    )
                 }
             }
         }

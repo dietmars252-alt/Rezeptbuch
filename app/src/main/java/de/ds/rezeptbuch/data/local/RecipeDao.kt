@@ -39,6 +39,13 @@ interface RecipeDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCategories(categories: List<Category>)
 
+    @Query("DELETE FROM kategorien WHERE name = :name")
+    suspend fun deleteCategoryByName(name: String)
+
+    @Transaction
+    @Query("SELECT * FROM rezepte")
+    suspend fun getAllRecipesOnce(): List<RecipeWithIngredients>
+
     @Transaction
     @Query("SELECT * FROM rezepte WHERE titel = :title LIMIT 1")
     suspend fun getRecipeByTitle(title: String): RecipeWithIngredients?

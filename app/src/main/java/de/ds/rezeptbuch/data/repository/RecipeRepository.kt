@@ -35,6 +35,39 @@ class RecipeRepository(private val recipeDao: RecipeDao) {
         recipeDao.insertCategories(categories)
     }
 
+    suspend fun deleteCategory(categoryName: String) {
+        recipeDao.deleteCategoryByName(categoryName)
+        val allRecipes = recipeDao.getAllRecipesOnce()
+        allRecipes.forEach { recipeWithIngredients ->
+            if (recipeWithIngredients.recipe.kategorien.contains(categoryName)) {
+                val newKategorien = recipeWithIngredients.recipe.kategorien.toMutableList()
+                newKategorien.remove(categoryName)
+                val updatedRecipe = recipeWithIngredients.recipe.copy(kategorien = newKategorien)
+                recipeDao.updateRecipe(updatedRecipe)
+            }
+        }
+    }
+
+    suspend fun renameCategory(oldName: String, newName: String) {
+        if (oldName == newName) return
+        
+        recipeDao.deleteCategoryByName(oldName)
+        recipeDao.insertCategories(listOf(Category(newName)))
+        
+        val allRecipes = recipeDao.getAllRecipesOnce()
+        allRecipes.forEach { recipeWithIngredients ->
+            if (recipeWithIngredients.recipe.kategorien.contains(oldName)) {
+                val newKategorien = recipeWithIngredients.recipe.kategorien.toMutableList()
+                newKategorien.remove(oldName)
+                if (!newKategorien.contains(newName)) {
+                    newKategorien.add(newName)
+                }
+                val updatedRecipe = recipeWithIngredients.recipe.copy(kategorien = newKategorien)
+                recipeDao.updateRecipe(updatedRecipe)
+            }
+        }
+    }
+
     suspend fun getRecipeByTitle(title: String): RecipeWithIngredients? {
         return recipeDao.getRecipeByTitle(title)
     }
